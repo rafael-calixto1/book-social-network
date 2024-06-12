@@ -31,8 +31,8 @@ public class User implements UserDetails, Principal {
     @Id
     @GeneratedValue
     private Integer id;
-    private String firstName;
-    private String lastName;
+    private String firstname;
+    private String lastname;
     private LocalDate DateOfBirth;
     @Column(unique = true)
     private String email;
@@ -96,6 +96,6 @@ public class User implements UserDetails, Principal {
     }
 
     private String fullName(){
-        return firstName + " "  + lastName;
+        return firstname + " "  + lastname;
     }
 }
