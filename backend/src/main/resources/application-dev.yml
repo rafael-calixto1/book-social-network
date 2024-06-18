@@ -29,3 +29,9 @@ mail:
       connectiontimeout: 5000
       timeout: 3000
       writetimeout: 5000
+
+application:
+  security:
+    jwt:
+      secret-key: 13545678993547324723497
+      expiration: 8640000
