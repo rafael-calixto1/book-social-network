@@ -1,5 +1,7 @@
 package com.dsenvolvendosistemas.book_network.auth;
 
+import com.dsenvolvendosistemas.book_network.email.EmailService;
+import com.dsenvolvendosistemas.book_network.email.EmailTemplateName;
 import com.dsenvolvendosistemas.book_network.role.RoleRepository;
 import com.dsenvolvendosistemas.book_network.security.JwtService;
 import com.dsenvolvendosistemas.book_network.user.Token;
@@ -10,6 +12,8 @@ import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 
 
+
+
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -27,8 +33,9 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationController authenticationManager;
+    private final AuthenticationManager authenticationManager;
     private final RoleRepository roleRepository;
+    private final EmailService emailService;
     private final TokenRepository tokenRepository;
 
     @Value("${application.mailing.frontend.activation-url}")
@@ -58,9 +65,10 @@ public class AuthenticationService {
                         request.getPassword()
                 )
         );
+
         var claims = new HashMap<String, Object>();
         var user = ((User) auth.getPrincipal());
-        claims.put("fullName", user.getFullName());
+        claims.put("fullName", user.fullName());
 
         var jwtToken = jwtService.generateToken(claims, (User) auth.getPrincipal());
         return AuthenticationResponse.builder()
@@ -83,7 +91,7 @@ public class AuthenticationService {
         user.setEnabled(true);
         userRepository.save(user);
 
-        savedToken.setValidatedAt(LocalDateTime.now());
+        savedToken.setValidated(LocalDateTime.now());
         tokenRepository.save(savedToken);
     }
 
@@ -101,10 +109,17 @@ public class AuthenticationService {
         return generatedToken;
     }
 
-    private void sendValidationEmail(User user)  {
+    private void sendValidationEmail(User user) throws MessagingException {
         var newToken = generateAndSaveActivationToken(user);
 
-        //sendEmail
+        emailService.sendEmail(
+                user.getEmail(),
+                user.fullName(),
+                EmailTemplateName.ACTIVATE_ACCOUNT,
+                activationUrl,
+                newToken,
+                "Account activation"
+        );
     }
 
     private String generateActivationCode(int length) {
